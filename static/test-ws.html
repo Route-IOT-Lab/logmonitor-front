@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .connected { background: #0d4f0d; color: #4caf50; }
+        .disconnected { background: #4f0d0d; color: #f44336; }
+        .messages { height: 400px; overflow-y: auto; background: #2d2d30; padding: 10px; border-radius: 4px; }
+        .message { margin: 4px 0; padding: 4px; background: #3c3c3c; border-radius: 2px; }
+        button { padding: 10px 20px; margin: 5px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #005a9e; }
+        button:disabled { background: #666; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebSocket 连接测试</h1>
+        
+        <div id="status" class="status disconnected">❌ 未连接</div>
+        
+        <div>
+            <button id="connect" onclick="connectWS()">连接</button>
+            <button id="disconnect" onclick="disconnectWS()" disabled>断开</button>
+            <button onclick="clearMessages()">清空消息</button>
+            <button onclick="sendTestMessage()">发送测试消息</button>
+        </div>
+        
+        <h3>消息日志:</h3>
+        <div id="messages" class="messages"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        const statusEl = document.getElementById('status');
+        const messagesEl = document.getElementById('messages');
+        const connectBtn = document.getElementById('connect');
+        const disconnectBtn = document.getElementById('disconnect');
+
+        function addMessage(msg) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            if (connected) {
+                statusEl.textContent = '✅ 已连接';
+                statusEl.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusEl.textContent = '❌ 未连接';
+                statusEl.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function connectWS() {
+            try {
+                addMessage('尝试连接 ws://localhost:8081...');
+                ws = new WebSocket('ws://localhost:8081');
+                
+                ws.onopen = function() {
+                    addMessage('✅ WebSocket 连接成功!');
+                    updateStatus(true);
+                };
+                
+                ws.onmessage = function(event) {
+                    addMessage(`📨 收到消息: ${event.data}`);
+                };
+                
+                ws.onclose = function(event) {
+                    addMessage(`❌ 连接关闭: Code=${event.code}, Reason=${event.reason}`);
+                    updateStatus(false);
+                };
+                
+                ws.onerror = function(error) {
+                    addMessage(`🚨 WebSocket 错误: ${error}`);
+                    updateStatus(false);
+                };
+                
+            } catch (error) {
+                addMessage(`❌ 连接失败: ${error}`);
+                updateStatus(false);
+            }
+        }
+
+        function disconnectWS() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function clearMessages() {
+            messagesEl.innerHTML = '';
+        }
+
+        function sendTestMessage() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const msg = JSON.stringify({
+                    type: 'ping',
+                    timestamp: new Date().toISOString(),
+                    message: 'Test from WebSocket test page'
+                });
+                ws.send(msg);
+                addMessage(`📤 发送消息: ${msg}`);
+            } else {
+                addMessage('❌ WebSocket 未连接，无法发送消息');
+            }
+        }
+
+        // 自动连接
+        connectWS();
+    </script>
+</body>
+</html> 

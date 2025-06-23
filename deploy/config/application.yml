@@ -1,0 +1,29 @@
+# Service 生产环境配置
+server:
+  host: "0.0.0.0"
+  port: 8081
+  
+database:
+  path: "/opt/log-monitor/data/service.db"
+  
+websocket:
+  path: "/ws"
+  
+cors:
+  enabled: true
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
+    - "https://your-domain.com"
+  
+logging:
+  level: "INFO"
+  file: "/opt/log-monitor/logs/service.log"
+  max_file_size: "10MB"
+  max_files: 5
+  
+security:
+  api_key_enabled: false
+  rate_limit:
+    enabled: true
+    requests_per_second: 100 

@@ -1,0 +1,42 @@
+# Agent 生产环境配置
+
+[server]
+host = "0.0.0.0"
+port = 8080
+use_tls = false
+
+[auth]
+enabled = false
+# api_keys = ["client1:your-secret-key"]
+
+[database]
+path = "/opt/log-monitor/agent/data/agent.db"
+
+[logging]
+level = "info"
+file = "/opt/log-monitor/agent/logs/agent.log"
+max_file_size = "10MB"
+max_files = 5
+
+[monitoring]
+# 默认监控的日志文件配置
+default_log_files = [
+    { alias = "syslog", path = "/var/log/syslog" },
+    { alias = "auth", path = "/var/log/auth.log" },
+    { alias = "kern", path = "/var/log/kern.log" }
+]
+
+[performance]
+# 性能相关配置
+max_connections = 1000
+buffer_size = 8192
+heartbeat_interval = 30
+
+[security]
+# 安全相关配置
+allowed_file_paths = [
+    "/var/log/",
+    "/opt/log-monitor/test-logs/"
+]
+max_file_size = "100MB"
+rate_limit = 100 
