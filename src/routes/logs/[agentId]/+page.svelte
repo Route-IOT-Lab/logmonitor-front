@@ -8,7 +8,8 @@
 		getLogFileTail,
 		updateLogFile,
 		deleteLogFile,
-		addLogFile
+		addLogFile,
+		startLogFileMonitoring
 	} from '$lib/services/api';
 	import { webSocketService } from '$lib/services/websocket';
 	import type { AgentDetailView, LogFile, LogMessage, AddLogFileRequest } from '$lib/types';
@@ -365,8 +366,34 @@
 	async function handleEditLogFile() {
 		if (!editingLogFile) return;
 		
+		// 客户端验证
+		if (!editLogFileForm.alias || !editLogFileForm.alias.trim()) {
+			alert('请输入日志文件别名');
+			return;
+		}
+		
+		if (!editLogFileForm.filePath || !editLogFileForm.filePath.trim()) {
+			alert('请输入日志文件路径');
+			return;
+		}
+		
+		// 检查新别名是否与其他文件重复（排除当前编辑的文件）
+		const trimmedAlias = editLogFileForm.alias.trim();
+		const existingFile = logFiles.find(file => 
+			file.alias === trimmedAlias && file.id !== editingLogFile.id
+		);
+		if (existingFile) {
+			alert(`别名 "${trimmedAlias}" 已被其他日志文件使用，请使用其他别名`);
+			return;
+		}
+		
 		try {
-			const updatedLogFile = await updateLogFile(agentId, editingLogFile.alias, editLogFileForm);
+			const trimmedForm = {
+				alias: trimmedAlias,
+				filePath: editLogFileForm.filePath.trim()
+			};
+			
+			const updatedLogFile = await updateLogFile(agentId, editingLogFile.alias, trimmedForm);
 			if (updatedLogFile) {
 				await loadLogFiles();
 				// 如果编辑的是当前选中的文件，更新选中状态
@@ -376,11 +403,11 @@
 				}
 				closeEditLogFileModal();
 			} else {
-				alert('更新日志文件失败，请检查别名是否重复');
+				alert('更新日志文件失败，请检查别名是否重复或文件路径是否正确');
 			}
 		} catch (error) {
 			console.error('Failed to edit log file:', error);
-			alert('更新日志文件失败');
+			alert('更新日志文件失败: ' + (error.message || '未知错误'));
 		}
 	}
 
@@ -430,17 +457,49 @@
 	}
 
 	async function handleAddLogFile() {
+		// 客户端验证
+		if (!addLogFileForm.alias || !addLogFileForm.alias.trim()) {
+			alert('请输入日志文件别名');
+			return;
+		}
+		
+		if (!addLogFileForm.filePath || !addLogFileForm.filePath.trim()) {
+			alert('请输入日志文件路径');
+			return;
+		}
+		
+		// 检查别名是否已存在
+		const existingFile = logFiles.find(file => file.alias === addLogFileForm.alias.trim());
+		if (existingFile) {
+			alert(`别名 "${addLogFileForm.alias.trim()}" 已存在，请使用其他别名`);
+			return;
+		}
+		
 		try {
-			const newLogFile = await addLogFile(agentId, addLogFileForm);
+			const trimmedForm = {
+				alias: addLogFileForm.alias.trim(),
+				filePath: addLogFileForm.filePath.trim()
+			};
+			
+			const newLogFile = await addLogFile(agentId, trimmedForm);
 			if (newLogFile) {
+				// 自动启动新添加的日志文件监听
+				console.log('Starting monitoring for new log file:', newLogFile.alias);
+				const startSuccess = await startLogFileMonitoring(agentId, newLogFile.alias);
+				if (startSuccess) {
+					console.log('✅ Successfully started monitoring for:', newLogFile.alias);
+				} else {
+					console.warn('⚠️ Failed to start monitoring for:', newLogFile.alias);
+				}
+				
 				await loadLogFiles();
 				closeAddLogFileModal();
 			} else {
-				alert('添加日志文件失败，请检查别名是否重复');
+				alert('添加日志文件失败，请检查别名是否重复或文件路径是否正确');
 			}
 		} catch (error) {
 			console.error('Failed to add log file:', error);
-			alert('添加日志文件失败');
+			alert('添加日志文件失败: ' + (error.message || '未知错误'));
 		}
 	}
 
