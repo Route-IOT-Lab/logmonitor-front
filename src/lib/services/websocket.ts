@@ -1,5 +1,18 @@
 import type { WebSocketMessage } from '../types';
 
+// 支持环境变量配置的WebSocket URL
+const getWebSocketUrl = (): string => {
+	// 开发环境使用环境变量或默认localhost
+	if (import.meta.env.DEV) {
+		const baseUrl = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8081';
+		return `${baseUrl}/ws`;
+	}
+	
+	// 生产环境使用环境变量或相对路径
+	const baseUrl = import.meta.env.VITE_WS_BASE_URL || window.location.origin.replace('http', 'ws');
+	return `${baseUrl}/ws`;
+};
+
 export class WebSocketService {
 	private ws: WebSocket | null = null;
 	private reconnectAttempts = 0;
@@ -8,8 +21,8 @@ export class WebSocketService {
 	private listeners: Map<string, ((data: any) => void)[]> = new Map();
 	private url: string;
 
-	constructor(url = 'ws://localhost:8081/ws') {
-		this.url = url;
+	constructor(url?: string) {
+		this.url = url || getWebSocketUrl();
 	}
 
 	connect(): Promise<void> {

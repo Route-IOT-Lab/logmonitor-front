@@ -83,8 +83,8 @@ build_project() {
     log_info "构建生产版本..."
     
     # 设置环境变量
-    export VITE_API_URL="$SERVICE_URL"
-    export VITE_WS_URL="$WEBSOCKET_URL"
+    export VITE_API_BASE_URL="$SERVICE_URL"
+    export VITE_WS_BASE_URL="$WEBSOCKET_URL"
     
     npm run build
     log_success "构建完成"

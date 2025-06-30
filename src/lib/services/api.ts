@@ -10,7 +10,20 @@ import type {
 	AddLogFileRequest
 } from '../types';
 
-const API_BASE = 'http://localhost:8081/api';
+// 支持环境变量配置的API基础URL
+const getApiBase = (): string => {
+	// 开发环境使用环境变量或默认localhost
+	if (import.meta.env.DEV) {
+		const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
+		return `${baseUrl}/api`;
+	}
+	
+	// 生产环境使用相对路径或环境变量
+	const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+	return baseUrl ? `${baseUrl}/api` : '/api';
+};
+
+const API_BASE = getApiBase();
 
 async function apiCall<T>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
 	try {
